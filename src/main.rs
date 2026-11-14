@@ -9,13 +9,17 @@ use ores_otel_sidecar::{runtime, SidecarConfig, SidecarIdentity};
 
 fn main() {
     let values = env_runtime::load_from_os();
+    // A malformed explicit bind must not silently select a different address.
     let cfg = match SidecarConfig::from_bind(
         SidecarIdentity::new(env::SERVICE, env::BIND),
         &values.bind,
         false,
     ) {
         Ok(cfg) => cfg,
-        Err(_) => SidecarConfig::from_env(SidecarIdentity::new(env::SERVICE, env::BIND)),
+        Err(_) => {
+            eprintln!("invalid sidecar bind configuration");
+            std::process::exit(2);
+        }
     };
     runtime::run(&cfg);
 }
